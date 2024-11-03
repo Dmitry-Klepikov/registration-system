@@ -14,10 +14,21 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     regwindow.cpp \
+    src/askwindow.cpp \
+    src/loginwindow.cpp \
+    src/main.cpp \
+    src/mainwindow.cpp \
+    src/regwindow.cpp \
+    src/user.cpp \
     user.cpp
 
 HEADERS += \
     askwindow.h \
+    headers/askwindow.h \
+    headers/loginwindow.h \
+    headers/mainwindow.h \
+    headers/regwindow.h \
+    headers/user.h \
     loginwindow.h \
     mainwindow.h \
     regwindow.h \
@@ -25,6 +36,10 @@ HEADERS += \
 
 FORMS += \
     askwindow.ui \
+    forms/askwindow.ui \
+    forms/loginwindow.ui \
+    forms/mainwindow.ui \
+    forms/regwindow.ui \
     loginwindow.ui \
     mainwindow.ui \
     regwindow.ui
