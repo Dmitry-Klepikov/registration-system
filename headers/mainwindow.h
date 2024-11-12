@@ -2,9 +2,11 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <askwindow.h>
-#include <QDebug>
-#include <user.h>
+
+#include <QSqlDatabase>
+
+#include <headers/loginwindow.h>
+#include <headers/user.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -23,16 +25,11 @@ signals:
 
 private:
     Ui::MainWindow *ui;
-//    User *user;
-    Askwindow * askwin;
-//    QString login;
-    void showAskWindow();
-    void closewindow();
-
+    LoginWindow *logwin;
+    QSqlDatabase db;
 
 private slots:
     void setLogin();
-
-
+    void closewindow();
 };
 #endif // MAINWINDOW_H
