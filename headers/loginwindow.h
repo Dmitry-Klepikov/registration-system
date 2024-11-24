@@ -10,9 +10,10 @@
 #include <QSettings>
 
 
-#include <headers/user.h>
-#include <headers/regwindow.h>
-#include <headers/activationwindow.h>
+#include "headers/user.h"
+#include "headers/regwindow.h"
+#include "headers/activationwindow.h"
+#include "headers/regEntryFunctons.h"
 
 
 namespace Ui {
@@ -37,6 +38,10 @@ private:
     Regwindow *regwin;
     Activationwindow *licensewin;
     QSettings *settings;
+    QTimer *timer;
+
+    int counter = 0;
+
     bool isEntry = false;
 
     void dbConnect(int);
@@ -45,12 +50,12 @@ private:
     bool checkLicense();
     QString getUUID();
     void isShowPass();
+    void stan();
 
 private slots:
     void applyButton_clicked();
     void regButton_clicked();
     void closeWindow();
-
 };
 
 #endif // LOGINWINDOW_H

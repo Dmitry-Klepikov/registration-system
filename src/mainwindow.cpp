@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     logwin = new LoginWindow;
     logwin->show();
+
     connect(logwin, &LoginWindow::errCanseled, this, &MainWindow::closewindow);
     connect(logwin, &LoginWindow::correctLogin, this, &MainWindow::setLogin);
 }
@@ -23,8 +24,8 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::closewindow(){
-//    delete logwin;
-    this->deleteLater();
+    delete logwin;
+    this->close();
 }
 
 void MainWindow::setLogin(){

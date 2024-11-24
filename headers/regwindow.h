@@ -10,7 +10,8 @@
 
 #include <cctype>
 
-#include <headers/user.h>
+#include "headers/user.h"
+#include "headers/regEntryFunctons.h"
 
 
 
@@ -43,6 +44,9 @@ private:
     bool entry();
     void setUser();
     void isShowPass();
+    bool isCorrectPhone();
+    bool checkLastname();
+    bool isCorrectLogin();
 
 
 private slots:

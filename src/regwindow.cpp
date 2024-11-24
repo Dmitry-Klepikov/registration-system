@@ -6,7 +6,7 @@ Regwindow::Regwindow(QWidget *parent) :
     ui(new Ui::Regwindow)
 {
     ui->setupUi(this);
-
+    setWindowModality(Qt::ApplicationModal);
     setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
 
     ui->passRadioButton->setChecked(false);
@@ -28,6 +28,7 @@ Regwindow::~Regwindow()
     delete ui;
 }
 
+
 void Regwindow::applyButton_clicked(){
 
     db.open();
@@ -37,32 +38,86 @@ void Regwindow::applyButton_clicked(){
            return;
        }
 
-    if (!checkPass() || !checkEmail() || !checkTelephone() || !checkLogin()){
-           return;
+    if (!checkLogin()){
+        return;
+    }
+
+    if(!checkPass()){
+        return ;
+    }
+
+    if(!checkLastname()){
+        return;
+    }
+
+    if(!checkTelephone()){
+        return;
+    }
+
+    if(!checkEmail()){
+        return;
     }
 
     if (registration()){
-           this->accept();
+        callMessageBox("Регистрация выполнена успешно!");
+           this->close();
     }
 }
 
+
+
 bool Regwindow::checkPass(){
-    if(ui->passLine->text() != ui->reppassLine->text()){
-        qDebug()<<"пароли разные";
+    if(ui->passLine->text().isEmpty()){
+        callMessageBox("Введите пароль");
         return false;
     }
 
     if(ui->passLine->text().length() < 6){
-        qDebug()<<"длина пароля должна составлять не менее 6 символов";
+        callMessageBox("длина пароля должна составлять не менее 6 символов");
         return false;
     }
 
     if(!isCorrectPass()){
-        qDebug()<<"пароль должен состоять как из символов так и из цифр";
+        callMessageBox("пароль должен состоять как из символов так и из цифр");
+        return false;
+    }
+
+    if(ui->reppassLine->text().isEmpty()){
+        callMessageBox("Введите проверку пароля");
+        return false;
+    }
+
+    if(ui->passLine->text() != ui->reppassLine->text()){
+        callMessageBox("Пароли разные");
         return false;
     }
 
     return true;
+}
+
+
+bool Regwindow::checkLastname(){
+    if(ui->lastnameLine->text().isEmpty()){
+        callMessageBox("Введите ФИО");
+        return false;
+    }
+
+    QSqlQuery query(db);
+
+    query.prepare("select count(lastname)  from user_info where lastname = :userName");
+
+    query.bindValue(":userName", ui->lastnameLine->text());
+
+    if(!query.exec()){
+        callMessageBox(query.lastError().text());
+        return false;
+    }
+
+    if(query.first()){
+        return true;
+    }
+
+    return false;
 }
 
 bool Regwindow::isCorrectPass(){
@@ -83,7 +138,36 @@ bool Regwindow::isCorrectPass(){
     return hasDigit&hasLetter;
 }
 
+bool Regwindow::isCorrectLogin(){
+
+    bool hasLetter = false;
+
+    for(char c : static_cast<std::string>(ui->loginLine->text().toLatin1())){
+
+        if(isalpha(c)){
+            hasLetter = true;
+        }
+    }
+
+    return !hasLetter;
+}
+
 bool Regwindow::checkLogin(){
+    if(ui->loginLine->text().isEmpty()){
+        callMessageBox("Введите логин");
+        return false;
+    }
+
+    if(ui->loginLine->text().length()!=4){
+        callMessageBox("Логин должен состоять не более чем из 4 знаков");
+        return false;
+    }
+
+    if(!isCorrectLogin()){
+        callMessageBox("Логин должен состоять из цифр");
+        return false;
+    }
+
     QSqlQuery query(db);
 
     query.prepare("select count(login)  from user_logins where login = :userName");
@@ -91,23 +175,26 @@ bool Regwindow::checkLogin(){
     query.bindValue(":userName", ui->loginLine->text());
 
     if(!query.exec()){
-        qDebug()<<query.lastError().text();
+        callMessageBox(query.lastError().text());
         return false;
     }
 
     if(query.first()){
         if(query.value(0).toBool()){
-            qDebug()<<"такой логин уже зарегистрирован";
+            callMessageBox("такой логин уже зарегистрирован");
         }else{
             return true;
         }
     }
-
-    qDebug()<<"ошибка обработки запроса";
     return false;
 }
 
 bool Regwindow::checkEmail(){
+    if(ui->mailLine->text().isEmpty()){
+        callMessageBox("Введите почту");
+        return false;
+    }
+
     QSqlQuery query(db);
 
     query.prepare("select count(email)  from user_info where email = :userMail");
@@ -115,23 +202,32 @@ bool Regwindow::checkEmail(){
     query.bindValue(":userMail", ui->mailLine->text());
 
     if(!query.exec()){
-        qDebug()<<query.lastError().text();
+        callMessageBox(query.lastError().text());
         return false;
     }
 
     if(query.first()){
         if(query.value(0).toBool()){
-            qDebug()<<"такая почта уже зарегистрирована";
+            callMessageBox("такая почта уже зарегистрирована");
         }else{
             return true;
         }
     }
-
-    qDebug()<<"ошибка обработки запроса";
+    callMessageBox("ошибка обработки запроса");
     return false;
 }
 
 bool Regwindow::checkTelephone(){
+    if(ui->telephoneLine->text().isEmpty()){
+        callMessageBox("Введите номер телефона");
+        return false;
+    }
+
+    if(!isCorrectPhone()){
+        callMessageBox("Номер телефона содержит символы, отличные от цифр");
+        return false;
+    }
+
     QSqlQuery query(db);
 
     query.prepare("select count(telephone)  from user_info where telephone = :userTelephone");
@@ -139,20 +235,32 @@ bool Regwindow::checkTelephone(){
     query.bindValue(":userTelephone", ui->telephoneLine->text());
 
     if(!query.exec()){
-      qDebug()<<query.lastError().text();
-      return false;
+        callMessageBox(query.lastError().text());
+        return false;
     }
 
     if(query.first()){
         if(query.value(0).toBool()){
-            qDebug()<<"такой телефон уже зарегистрирован";
+            callMessageBox("такой телефон уже зарегистрирован");
         }else{
             return true;
         }
     }
-
-    qDebug()<<"ошибка обработки запроса";
+    callMessageBox("ошибка обработки запроса");
     return false;
+}
+
+bool Regwindow::isCorrectPhone(){
+    bool hasLetter = false;
+
+    for(char c : static_cast<std::string>(ui->telephoneLine->text().toLatin1())){
+
+        if(isalpha(c)){
+            hasLetter = true;
+        }
+    }
+
+    return !hasLetter;
 }
 
 bool Regwindow::registration(){
@@ -180,10 +288,10 @@ bool Regwindow::setLogPass(){
                   "VALUES (:login, :password)");
 
     query.bindValue(":login", ui->loginLine->text());
-    query.bindValue(":password", ui->passLine->text());
+    query.bindValue(":password", hashString(ui->passLine->text())); // записываем хеш пароля в бд
 
     if(!query.exec()){
-        qDebug()<<query.lastError().text();
+        callMessageBox(query.lastError().text());
         return false;
     }
     return true;
@@ -197,17 +305,17 @@ int Regwindow::getUserId(){
                   "select @Result as res, @id as id");
 
     query.bindValue(":Login", ui->loginLine->text());
-    query.bindValue(":Pass", ui->passLine->text());
+    query.bindValue(":Pass", hashString(ui->passLine->text()));
     query.bindValue("@Result",QVariant(0));
     query.bindValue("@id",QVariant(1));
 
     if(!query.exec()){
-        qDebug()<<query.lastError().text();
+        callMessageBox(query.lastError().text());
         return 0;
     }
 
     if(!query.first()){
-        qDebug()<<query.lastError().text();
+        callMessageBox(query.lastError().text());
         return 0;
     }
 
@@ -230,68 +338,16 @@ bool Regwindow::pushUserInfo(int id){
     query.bindValue((":mail"), ui->mailLine->text());
 
     if(!query.exec()){
-        qDebug()<<query.lastError().text();
+        callMessageBox(query.lastError().text());
         return false;
     }
 
     return true;
 }
 
-bool Regwindow::entry(){
-    QSqlQuery query = QSqlQuery(db);
-
-    query.prepare(" declare @Result bit, @id int "
-                  "exec verification :Login, :Pass, @Result output, @id output "
-                  "select @Result as res, @id as id");
-
-    query.bindValue(":Login", ui->loginLine->text());
-    query.bindValue(":Pass", ui->passLine->text());
-    query.bindValue("@Result",QVariant(0));
-    query.bindValue("@id",QVariant(1));
-
-    if(!query.exec()){
-        qDebug()<<query.lastError().text();
-        return false;
-    }
-
-    if(!query.first()){
-            qDebug()<<query.lastError().text();
-            return false;
-        }
-    if(query.value(0).toBool()){
-        User::setId(query.value(1).toString());
-        setUser();
-        return true;
-    }
-
-    qDebug()<<"wrong login or password";
-    return false;
-}
-
-void Regwindow::setUser(){
-    QSqlQuery query = QSqlQuery(db);
-
-    query.prepare("select lastname from user_info where u_id = :id");
-
-    query.bindValue(":id",User::getId());
-    query.bindValue("lastname", QVariant(0));
-
-    if(!query.exec()){
-        qDebug()<<query.lastError().text();
-        return ;
-    }
-
-    if(query.next()){
-        User::setUsername(query.value(0).toString());
-        return ;
-    }
-    return ;
-}
-
 void Regwindow::cancellButton_clicked(){
     this->close();
 }
-
 
 void Regwindow::isShowPass(){
     if(ui->passRadioButton->isChecked()){

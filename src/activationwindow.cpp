@@ -1,15 +1,18 @@
 #include "headers/activationwindow.h"
 #include "ui_activationwindow.h"
+#include <QMessageBox>
 
 Activationwindow::Activationwindow(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Activationwindow)
 {
     ui->setupUi(this);
+
     setWindowModality(Qt::ApplicationModal);
     settings = new QSettings("settings.ini", QSettings::IniFormat);
 
     connect(ui->ActivationButton, &QAbstractButton::clicked, this, &Activationwindow::activationButton_clicked);
+    connect(this, &Activationwindow::finished, this, &Activationwindow::sendSignal);
 }
 
 Activationwindow::~Activationwindow()
@@ -18,24 +21,34 @@ Activationwindow::~Activationwindow()
     delete ui;
 }
 
+void Activationwindow::callMessageBox(QString msg){
+    QMessageBox msgbox;
+    msgbox.setText(msg);
+    msgbox.exec();
+}
+
 void Activationwindow::activationButton_clicked(){
     db = QSqlDatabase::database();
-
 
     if(!db.open()){
         qDebug()<<db.lastError().text();
         return ;
     }
-    if(checkKey()){
+
+    if(checkKey()){ //проверка введенного ключа лицензии
+        callMessageBox("Ключ успешно принят!");
         addDevice();
         settings->setValue("license", ui->licenseLine->text());
         settings->sync();
+        isEntry = true;
         this->accept();
     }
-    qDebug()<<"here";
-    if(checkLicense()){
+
+    if(checkLicense()){ //проверка сохраненного uu_id материнской платы из базы данных с пользовательским uu_id
+        callMessageBox("Ключ успешно принят!");
         settings->setValue("license", ui->licenseLine->text());
         settings->sync();
+        isEntry = true;
         this->accept();
     }
 }
@@ -51,14 +64,12 @@ bool Activationwindow::checkKey(){
     }
 
     if(!query.first()){
+        callMessageBox("Неправильный ключ");
         return false;
     }else{
-        qDebug()<<query.value(1).toString();
         if(query.value(1).toString().isEmpty()){
             return true;
-
         }else{
-            qDebug()<<"err";
             return false;
         }
     }
@@ -67,8 +78,7 @@ bool Activationwindow::checkKey(){
 bool Activationwindow::checkLicense(){
     db = QSqlDatabase::database();
 
-    if(!db.open()){ //проверка подключения
-        qDebug()<<db.lastError().text();
+    if(!db.open()){
         qDebug()<<"error of database connection";
         return false;
     }
@@ -86,6 +96,7 @@ bool Activationwindow::checkLicense(){
         if (query.value(0).toString() == getUUID()){
             return true;
         }else{
+            callMessageBox("Ключ зарегистрирован на другого пользователя!");
             return false;
         }
     }
@@ -119,4 +130,10 @@ QString Activationwindow::getUUID(){
 
     return serialNumber;
 
+}
+
+void Activationwindow::sendSignal(){
+    if(!isEntry)
+        emit errCanceled();
+    emit correctLicense();
 }

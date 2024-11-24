@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationDomain("MyOrg.com");
     QCoreApplication::setApplicationName("MyApp");
 
-    MainWindow *w = new MainWindow;
-    w->show();
+    MainWindow w;
+    w.show();
     return a.exec();
 }

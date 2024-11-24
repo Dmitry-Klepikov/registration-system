@@ -82,6 +82,13 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>loginLine</tabstop>
+  <tabstop>passLine</tabstop>
+  <tabstop>passRadioButton</tabstop>
+  <tabstop>applyButton</tabstop>
+  <tabstop>regButton</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

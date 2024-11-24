@@ -9,6 +9,8 @@
 #include <QProcess>
 #include <QSettings>
 
+#include "headers/regEntryFunctons.h"
+
 namespace Ui {
 class Activationwindow;
 }
@@ -21,10 +23,15 @@ public:
     explicit Activationwindow(QWidget *parent = nullptr);
     ~Activationwindow();
 
+signals:
+    void errCanceled();
+    void correctLicense();
+
 private:
     Ui::Activationwindow *ui;
     QSqlDatabase db;
     QSettings *settings;
+    bool isEntry = false;
 
     QString getUUID();
     bool checkKey();
@@ -33,6 +40,7 @@ private:
 
 private slots:
     void activationButton_clicked();
+    void sendSignal();
 };
 
 #endif // ACTIVATIONWINDOW_H

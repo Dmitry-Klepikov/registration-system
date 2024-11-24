@@ -1,70 +1,72 @@
 #include "headers/loginwindow.h"
 #include "ui_loginwindow.h"
-
+#include <QTimer>
 
 LoginWindow::LoginWindow(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::LoginWindow)
 {
     ui->setupUi(this);
+    timer = new QTimer;
     setWindowModality(Qt::ApplicationModal);
     setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
+
     ui->passRadioButton->setChecked(false);
     ui->passLine->setEchoMode(QLineEdit::Password);
-    this->setEnabled(false);
-            licensewin = new Activationwindow;
-    settings = new QSettings("settings.ini", QSettings::IniFormat);
-    settings->deleteLater();
-//    settings->clear();
-//    settings->sync();
-    if(!settings->contains("license")){
-        qDebug()<<settings->value("license").toString();
 
-//        licensewin->deleteLater();
+    this->setEnabled(false);
+
+    licensewin = new Activationwindow;
+
+    settings = new QSettings("settings.ini", QSettings::IniFormat);
+
+    settings->deleteLater();
+
+
+    if(!settings->contains("license")){ //если отсуттвует ключ license в файле конфигурации или самого файла конфигурации
         licensewin->show();
+
         if(licensewin->exec()){
             this->setEnabled(true);
         }else{
-//            this->deleteLater();
+            QMetaObject::invokeMethod(this,"closeWindow", Qt::QueuedConnection);
         }
     }else{
-        if(checkLicense()){
+        if(checkLicense()){//проверяем ключ лицензии из файла конфигурации
             this->setEnabled(true);
         }else{
-
             licensewin->show();
+
             if(licensewin->exec()){
                 this->setEnabled(true);
             }else{
-//                this->deleteLater();
+                QMetaObject::invokeMethod(this,"closeWindow", Qt::QueuedConnection);
             }
         }
     }
-
-
-//    соединяемся с бд
 
     connect(ui->applyButton, &QAbstractButton::clicked, this, &LoginWindow::applyButton_clicked);
     connect(ui->regButton, &QAbstractButton::clicked, this, &LoginWindow::regButton_clicked);
     connect(this, &QDialog::finished, this, &LoginWindow::closeWindow);
     connect(ui->passRadioButton, &QAbstractButton::clicked, this, &LoginWindow::isShowPass);
+    connect(timer, &QTimer::timeout, this, &LoginWindow::stan);
 }
 
 LoginWindow::~LoginWindow()
 {
-    if(db.isOpen())
+    if(db.isOpen()){
         db.close();
-    if(!isEntry)
-        emit errCanseled();
+    }
+
     delete licensewin;
+    delete timer;
     delete ui;
-    qDebug()<<"logwin was deleted";
 }
 
 bool LoginWindow::checkLicense(){
     db = QSqlDatabase::database();
 
-    if(!db.open()){ //проверка подключения
+    if(!db.open()){
         qDebug()<<db.lastError().text();
         qDebug()<<"error of database connection";
         return false;
@@ -92,46 +94,52 @@ bool LoginWindow::checkLicense(){
 
 QString LoginWindow::getUUID(){
 
+
     QProcess proc;
-      proc.start("C:/Windows/System32/cmd.exe", QStringList() << "/C" << "wmic baseboard get serialnumber");
-      proc.waitForFinished();
 
-      // Получаем стандартный вывод процесса
-      QString output = proc.readAllStandardOutput();
+    proc.start("C:/Windows/System32/cmd.exe", QStringList() << "/C" << "wmic baseboard get serialnumber");
 
-      // Разбиваем вывод на строки
-      QStringList lines = output.split("\n");
+    proc.waitForFinished();
 
-      // Ищем строку с SerialNumber
-      QString serialNumber =lines.value(1).trimmed();
+    // Получаем стандартный вывод процесса
+    QString output = proc.readAllStandardOutput();
 
-//      qDebug()<<serialNumber;
+    // Разбиваем вывод на строки
+    QStringList lines = output.split("\n");
 
-      // Возвращаем SerialNumber
-      return serialNumber;
+
+    QString serialNumber = lines.value(1).trimmed();
+
+    return serialNumber;
 
 }
 
 void LoginWindow::applyButton_clicked(){
     db = QSqlDatabase::database();
 
-    if(!db.open()){ //проверка подключения
+    if(!db.open()){
         qDebug()<<db.lastError().text();
         qDebug()<<"error of database connection";
         return ;
     }
 
     if(!entry(db)){ //проверка входа
-        qDebug()<<" wrong login or password ";
+        callMessageBox("Неправильный логин или пароль");
+        counter += 1;
+        if(counter == 3){
+            counter = 0;
+            stan();
+        }
         return ;
     }
 
     if(!setUser(db)){ //проверка получения пользовательских данных
-        qDebug()<<"error of getting info";
+        callMessageBox("Ошибка чтения данных");
         return ;
     }
-
+    isEntry=true;
     this->accept();
+
 }
 
 bool LoginWindow::entry(QSqlDatabase db){
@@ -142,7 +150,7 @@ bool LoginWindow::entry(QSqlDatabase db){
                   "select @Result as res, @id as id");
 
     query.bindValue(":Login", ui->loginLine->text());
-    query.bindValue(":Pass", ui->passLine->text());
+    query.bindValue(":Pass", hashString(ui->passLine->text())); // отправляем хеш в процедуру верификации
     query.bindValue("@Result",QVariant(0));
     query.bindValue("@id",QVariant(1));
 
@@ -184,17 +192,19 @@ bool LoginWindow::setUser(QSqlDatabase db){
 void LoginWindow::regButton_clicked(){
     regwin = new Regwindow;
 
-    regwin->setModal(true);
+    regwin->show();
+    regwin->exec();
 
-    if (regwin->exec()){
-//        correctEntry();
-    }
     delete regwin;
 }
 
 void LoginWindow::closeWindow(){
-    if(!isEntry)
+    if(!isEntry){
         emit errCanseled();
+    }else{
+        emit correctLogin();
+    }
+
 }
 
 void LoginWindow::isShowPass(){
@@ -202,5 +212,15 @@ void LoginWindow::isShowPass(){
         ui->passLine->setEchoMode(QLineEdit::Normal);
     }else{
         ui->passLine->setEchoMode(QLineEdit::Password);
+    }
+}
+
+void LoginWindow::stan(){
+    if(ui->applyButton->isEnabled()){
+        ui->applyButton->setEnabled(false);
+        callMessageBox("Из-за частых ошибок доступ ограничен на 5 секунд. Пожалуйста, проверьте логин и пароль");
+        timer->start(5000);
+    }else{
+        ui->applyButton->setEnabled(true);
     }
 }

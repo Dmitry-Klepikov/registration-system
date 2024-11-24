@@ -13,6 +13,7 @@ SOURCES += \
     src/loginwindow.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
+    src/regEntryFunctions.cpp \
     src/regwindow.cpp \
     src/user.cpp \
 
@@ -20,6 +21,7 @@ HEADERS += \
     headers/activationwindow.h \
     headers/loginwindow.h \
     headers/mainwindow.h \
+    headers/regEntryFunctons.h \
     headers/regwindow.h \
     headers/user.h \
 
