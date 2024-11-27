@@ -143,6 +143,7 @@ void LoginWindow::applyButton_clicked(){
         checkLocking();
         if(counter == 3){
             counter = 0;
+            errLoginCount = 0;
             stan();
         }
         return ;
@@ -248,6 +249,7 @@ void LoginWindow::stan(){
         callMessageBox("Из-за частых ошибок доступ ограничен на 5 секунд. Пожалуйста, проверьте логин и пароль");
         timer->start(5000);
     }else{
+        timer->stop();
         ui->applyButton->setEnabled(true);
     }
 }

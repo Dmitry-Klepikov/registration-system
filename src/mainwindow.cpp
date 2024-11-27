@@ -177,11 +177,16 @@ bool MainWindow::checkFileAccess(QString fileName){
         return false;
     }
     if(query.first()){
-        if(query.value(0).toInt()>User::getAccess()){
+        qDebug()<<query.value(0);
+        qDebug()<<query.value(1);
+        if(query.value(0).toInt()>User::getAccess().toInt()){
+            qDebug()<<query.value(0).toInt();
+            callMessageBox("недостаточный уровень доступа");
             return false;
         }
         if(query.value(1).toInt() == 0){
             qDebug()<<"stat"<<0;
+
             return true;
         }
         if(query.value(1).toInt() == 1){
