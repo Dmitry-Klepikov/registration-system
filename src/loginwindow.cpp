@@ -199,10 +199,10 @@ bool LoginWindow::entry(QSqlDatabase db){
 bool LoginWindow::setUser(QSqlDatabase db){
     QSqlQuery query = QSqlQuery(db);
 
-    query.prepare("select lastname from user_info where u_id = :id");
+    query.prepare("select login from user_logins where id = :id");
 
     query.bindValue(":id",User::getId());
-    query.bindValue("lastname", QVariant(0));
+    query.bindValue("login", QVariant(0));
 
     if(!query.exec()){
         qDebug()<<query.lastError().text();

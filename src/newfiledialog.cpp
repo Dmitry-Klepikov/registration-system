@@ -1,5 +1,6 @@
 #include "headers/newfiledialog.h"
 #include "ui_newfiledialog.h"
+#include <QLockFile>
 
 NewFileDialog::NewFileDialog(QWidget *parent) :
     QDialog(parent),
@@ -28,12 +29,16 @@ void NewFileDialog::on_buttonBox_accepted()
     if(!checkName()){
         return ;
     }
-    QFile file(root+"//"+ui->nameLineEdit->text()+".txt");
+    QFile file(root+"//"+ui->nameLineEdit->text()+".secretextension");
     if(file.open(QIODevice::WriteOnly | QIODevice::Append)){
+//        QLockFile lock(root+"//"+ui->nameLineEdit->text()+".secretextension");
+//        lock.lock();
         file.close();
     }else{
         return ;
     }
+
+
 
     QSqlQuery query(db);
     query.prepare(  "INSERT INTO [dbo].[files_access] "
@@ -42,7 +47,7 @@ void NewFileDialog::on_buttonBox_accepted()
                     " VALUES    "
                     "( :file_name,  "
                     "  :access)");
-    query.bindValue(":file_name", ui->nameLineEdit->text()+".txt");
+    query.bindValue(":file_name", ui->nameLineEdit->text()+".secretextension");
     query.bindValue(":access", ui->accessComboBox->currentText().toInt());
     if(!query.exec()){
         qDebug()<<"err updete";
@@ -58,7 +63,7 @@ bool NewFileDialog::checkName(){
     db = QSqlDatabase::database(localPatch);
     QSqlQuery query(db);
     query.prepare("select file_name from files_access where file_name = :file_name");
-    query.bindValue(":file_name", ui->nameLineEdit->text()+".txt");
+    query.bindValue(":file_name", ui->nameLineEdit->text()+".secretextension");
     if(!query.exec()){
         qDebug()<<"err updete";
         return false;

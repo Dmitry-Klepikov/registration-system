@@ -13,6 +13,7 @@
 #include <headers/regEntryFunctons.h>
 #include <headers/user.h>
 #include "newfiledialog.h"
+#include <QLockFile>
 
 
 QT_BEGIN_NAMESPACE
@@ -29,6 +30,8 @@ public:
 
 signals:
     void canseled();
+    void isUsed(QString);
+    void isUnUsed(QString);
 
 private:
     Ui::MainWindow *ui;
@@ -38,16 +41,24 @@ private:
 
     QString filePath;
 
+    QString currentFileName;
+    QString lastFileName;
+
+
     QAction *doubleClick;
 
     void restrictionByAccess();
     bool checkFileAccess(QString);
     void closeFile();
+    void sign();
 
 
 private slots:
     void setLogin();
     void closewindow();
+
+    void sendUnUsing(QString);
+    void sendUsing(QString);
 
     void on_filesListView_doubleClicked(const QModelIndex &index);
     void on_saveFile_triggered();
