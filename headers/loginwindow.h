@@ -31,10 +31,13 @@ public:
 signals:
     void errCanseled();
     void correctLogin();
+    void lockLogin();
 
 private:
     Ui::LoginWindow *ui;
     QSqlDatabase db;
+    QSqlDatabase dbLocal;
+
     Regwindow *regwin;
     Activationwindow *licensewin;
     QSettings *settings;
@@ -44,6 +47,8 @@ private:
 
     bool isEntry = false;
 
+    int errLoginCount = 0;
+    QString currentLogin;
     void dbConnect(int);
     bool entry(QSqlDatabase);
     bool setUser(QSqlDatabase);
@@ -51,11 +56,15 @@ private:
     QString getUUID();
     void isShowPass();
     void stan();
+    void checkLocking();
+    bool checkAccess();
+    void lockCurrentLogin();
 
 private slots:
     void applyButton_clicked();
     void regButton_clicked();
     void closeWindow();
+    void on_loginLine_textChanged(const QString &arg1);
 };
 
 #endif // LOGINWINDOW_H

@@ -1,6 +1,5 @@
 #include "headers/activationwindow.h"
 #include "ui_activationwindow.h"
-#include <QMessageBox>
 
 Activationwindow::Activationwindow(QWidget *parent) :
     QDialog(parent),
@@ -21,14 +20,8 @@ Activationwindow::~Activationwindow()
     delete ui;
 }
 
-void Activationwindow::callMessageBox(QString msg){
-    QMessageBox msgbox;
-    msgbox.setText(msg);
-    msgbox.exec();
-}
-
 void Activationwindow::activationButton_clicked(){
-    db = QSqlDatabase::database();
+    db = QSqlDatabase::database(path);
 
     if(!db.open()){
         qDebug()<<db.lastError().text();
@@ -76,7 +69,7 @@ bool Activationwindow::checkKey(){
 }
 
 bool Activationwindow::checkLicense(){
-    db = QSqlDatabase::database();
+    db = QSqlDatabase::database(path);
 
     if(!db.open()){
         qDebug()<<"error of database connection";

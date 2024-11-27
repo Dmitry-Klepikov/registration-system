@@ -9,6 +9,7 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    src/newfiledialog.cpp \
     src/activationwindow.cpp \
     src/loginwindow.cpp \
     src/main.cpp \
@@ -24,12 +25,14 @@ HEADERS += \
     headers/regEntryFunctons.h \
     headers/regwindow.h \
     headers/user.h \
+    headers/newfiledialog.h
 
 FORMS += \
     forms/activationwindow.ui \
     forms/loginwindow.ui \
     forms/mainwindow.ui \
     forms/regwindow.ui \
+    forms/newfiledialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

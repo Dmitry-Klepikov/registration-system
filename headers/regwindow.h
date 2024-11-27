@@ -14,7 +14,6 @@
 #include "headers/regEntryFunctons.h"
 
 
-
 namespace Ui {
 class Regwindow;
 }

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>753</width>
+    <height>573</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,8 +29,25 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="0" colspan="2">
-     <widget class="QPlainTextEdit" name="plainTextEdit"/>
+    <item row="1" column="0">
+     <widget class="QListView" name="filesListView">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QPlainTextEdit" name="filesTextEdit">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -39,7 +56,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>753</width>
      <height>25</height>
     </rect>
    </property>
@@ -47,7 +64,6 @@
     <property name="title">
      <string>Файл</string>
     </property>
-    <addaction name="openFile"/>
     <addaction name="createNewFile"/>
     <addaction name="saveFile"/>
     <addaction name="closeFile"/>
@@ -55,11 +71,6 @@
    <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="openFile">
-   <property name="text">
-    <string>Открыть файл</string>
-   </property>
-  </action>
   <action name="saveFile">
    <property name="text">
     <string>Сохранить файл</string>

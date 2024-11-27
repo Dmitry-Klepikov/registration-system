@@ -7,6 +7,12 @@ LoginWindow::LoginWindow(QWidget *parent) :
     ui(new Ui::LoginWindow)
 {
     ui->setupUi(this);
+    db = QSqlDatabase::addDatabase("QODBC","publisherName");
+    db.setDatabaseName("srv");
+    path = db.connectionName();
+    qDebug()<<path;
+    dbLocal = QSqlDatabase::addDatabase("QODBC","localName");
+
     timer = new QTimer;
     setWindowModality(Qt::ApplicationModal);
     setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
@@ -50,6 +56,7 @@ LoginWindow::LoginWindow(QWidget *parent) :
     connect(this, &QDialog::finished, this, &LoginWindow::closeWindow);
     connect(ui->passRadioButton, &QAbstractButton::clicked, this, &LoginWindow::isShowPass);
     connect(timer, &QTimer::timeout, this, &LoginWindow::stan);
+    connect(this, &LoginWindow::lockLogin, this, &LoginWindow::lockCurrentLogin);
 }
 
 LoginWindow::~LoginWindow()
@@ -64,7 +71,7 @@ LoginWindow::~LoginWindow()
 }
 
 bool LoginWindow::checkLicense(){
-    db = QSqlDatabase::database();
+//    db = QSqlDatabase::database();
 
     if(!db.open()){
         qDebug()<<db.lastError().text();
@@ -115,10 +122,17 @@ QString LoginWindow::getUUID(){
 }
 
 void LoginWindow::applyButton_clicked(){
-    db = QSqlDatabase::database();
+    dbLocal.setDatabaseName(ui->DSNLine->text());
+    localPatch = dbLocal.connectionName();
 
     if(!db.open()){
-        qDebug()<<db.lastError().text();
+        callMessageBox(db.lastError().text());
+        qDebug()<<"error of database connection";
+        return ;
+    }
+
+    if(!dbLocal.open()){
+        callMessageBox(dbLocal.lastError().text());
         qDebug()<<"error of database connection";
         return ;
     }
@@ -126,6 +140,7 @@ void LoginWindow::applyButton_clicked(){
     if(!entry(db)){ //проверка входа
         callMessageBox("Неправильный логин или пароль");
         counter += 1;
+        checkLocking();
         if(counter == 3){
             counter = 0;
             stan();
@@ -133,10 +148,22 @@ void LoginWindow::applyButton_clicked(){
         return ;
     }
 
+    if(!dbLocal.open()){
+        callMessageBox(dbLocal.lastError().text());
+        qDebug()<<"error of databaseLocal connection";
+        return ;
+    }
+
+    if(!checkAccess()){
+        callMessageBox("ошибка доступа");
+        return ;
+    }
+
     if(!setUser(db)){ //проверка получения пользовательских данных
         callMessageBox("Ошибка чтения данных");
         return ;
     }
+
     isEntry=true;
     this->accept();
 
@@ -224,3 +251,51 @@ void LoginWindow::stan(){
         ui->applyButton->setEnabled(true);
     }
 }
+
+bool LoginWindow::checkAccess(){
+    QSqlQuery query = QSqlQuery(dbLocal);
+    query.prepare("select access from user_access where login = :login");
+    query.bindValue(":login", ui->loginLine->text());
+    if(!query.exec()){
+        qDebug()<<query.lastError().text();
+        return false;
+    }
+
+    if(query.next()){
+        User::setAccess(query.value(0).toString());
+        return true;
+    }
+
+    return false;
+
+}
+
+void LoginWindow::checkLocking(){
+    errLoginCount++;
+    qDebug()<<errLoginCount;
+    if(errLoginCount == 3){
+        emit lockLogin();
+    }
+}
+
+void LoginWindow::lockCurrentLogin(){
+    qDebug()<<"here";
+    QSqlQuery query = QSqlQuery(dbLocal);
+    query.prepare("UPDATE user_access "
+                  "SET locking = :locking "
+                  "WHERE login = :login");
+    query.bindValue(":locking", 1);
+    query.bindValue(":login",currentLogin);
+    if(!query.exec()){
+        qDebug()<<query.lastError().text();
+        return ;
+    }
+    callMessageBox("Пользователь заблокирован");
+}
+
+void LoginWindow::on_loginLine_textChanged(const QString &arg1)
+{
+    errLoginCount = 0;
+    currentLogin = arg1;
+}
+

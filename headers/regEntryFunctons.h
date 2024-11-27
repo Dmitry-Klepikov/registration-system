@@ -4,8 +4,12 @@
 #include <QString>
 #include <QMessageBox>
 
+extern QString root;
+extern QString path;
+extern QString localPatch;
+
 QString hashString(const QString &input);
-void callMessageBox(QString msg);
+void callMessageBox(const QString msg);
 
 #endif // REGENTRYFUNCTONS_H
 

@@ -12,7 +12,7 @@ Regwindow::Regwindow(QWidget *parent) :
     ui->passRadioButton->setChecked(false);
     ui->reppassLine->setEchoMode(QLineEdit::Password);
 
-    db = QSqlDatabase::database();
+    db = QSqlDatabase::database(path);
 
     connect(ui->applyButtton, &QAbstractButton::clicked, this, &Regwindow::applyButton_clicked);
     connect(ui->cancellButton, &QAbstractButton::clicked, this, &Regwindow::cancellButton_clicked);
