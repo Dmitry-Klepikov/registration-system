@@ -1,5 +1,6 @@
 #include "headers/mainwindow.h"
 #include "ui_mainwindow.h"
+#include <zlib.h>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -26,6 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     emit isUnUsed(currentFileName);
+    closeFile();
     delete model;
     delete ui;
 }
@@ -35,14 +37,7 @@ void MainWindow::closewindow(){
     this->close();
 }
 
-QString changeExtension(const QString& path, const QString& oldExt, const QString& newExt)
-{
-    QFile file(path);
-    QString newPath = path;
-    newPath.replace(oldExt, newExt);
-    file.rename(newPath);
-    return newPath;
-}
+
 
 void MainWindow::setLogin(){
     delete logwin;
@@ -56,55 +51,98 @@ void MainWindow::setLogin(){
 void MainWindow::on_filesListView_doubleClicked(const QModelIndex &index)
 {
     if(index.isValid()){
+        QString str = index.data().toString();
+        qDebug()<<str;
+        if (str.contains(".zip")) {
 
-        if(!checkFileAccess(index.data().toString())){
-            return;
+            str.remove(".zip"); // Отбросить подстроку после второй точки
+
+            if(currentFileName != str){
+                closeFile();
+            }
+            qDebug()<<str<<"nozip";
         }
 
+        if (index.data().toString().contains(".zip")){
+            if(!checkFileAccess(str)){
+                    return;
+            }
 
-            emit isUnUsed(currentFileName);
-            qDebug()<<"free: "<<currentFileName;
+            deleteArhive(root, index.data().toString(), getZipPass(str));
+
+        }else{
+        if(!checkFileAccess(index.data().toString())){
+            closeFile();
+            return;
+        }
+            closeFile();
             currentFileName = index.data().toString();
 
-
-        filePath = model->rootPath()+"//"+index.data().toString();
-
-
-
-//        QString fileName =index.data().toString();
-//        // Разделить имя файла и расширение
-//        QStringList parts = fileName.split(".");
-
-//        // Изменить расширение
-//        parts[1] = "txt";
-
-//        // Установить новое имя файла
-//        fileName = parts.join(".");
+        filePath = model->rootPath()+"/"+index.data().toString();
+        qDebug()<<"try open file:";
 
         filePath = changeExtension(filePath,"secretextension","txt");
         QFile file(filePath);
+        qDebug()<<filePath;
         if(file.open(QIODevice::ReadOnly)){
+            qDebug()<<"file was open";
             emit isUsed(currentFileName);
-//            QLockFile lockfile(filePath);
-//            lockfile.lock();
+            QString strnj = file.readAll();
+//            qDebug()<<fileHash;
+            qDebug()<<strnj+"   in file";
+                if(fileHash == hashString(strnj)){
+                    qDebug()<<fileHash+"   from bd";
+                    qDebug()<<hashString(strnj)+ "     from file";
+                    ui->filesTextEdit->setPlainText(strnj);
+                    file.close();
+//                    filePath = changeExtension(filePath,"txt","secretextension");
+                    file.remove();
+                }else{
+                    qDebug()<<fileHash;
+                    qDebug()<<hashString(strnj);
+                    qDebug()<<strnj;
+                    file.close();
+                    filePath = changeExtension(filePath,"txt","secretextension");
 
-            QString str = file.readAll();
-            ui->filesTextEdit->setPlainText(str);
-            file.close();
-
-//            lockfile.unlock();
-
+                    callMessageBox("Несоответсвие хеша. Файл будет закрыт");
+                    closeFile();
+                }
         }
-       filePath = changeExtension(filePath,"txt","secretextension");
     }
+    }
+}
+
+QString MainWindow::getZipPass(QString file){
+    db = QSqlDatabase::database(localPatch);
+        QSqlQuery query(db);
+        query.prepare("select modified_by from files_access where file_name = :file_name");
+        query.bindValue(":file_name", file);
+        if(!query.exec()){
+            return "";
+        }
+        if(query.first()){
+//            pass = query.value(0).toString();
+            qDebug()<<"pass: "+pass;
+            return query.value(0).toString();
+        }
+
 }
 
 void MainWindow::closeFile(){
     QFile file(filePath);
-    if(file.isOpen()){
+    if(file.open(QIODevice::ReadOnly)){
         file.close();
     }
     emit isUnUsed(currentFileName);
+//    if(pass == ""){
+//        pass = User::getUsername();
+//    }
+    qDebug()<<"pass to close: "+pass;
+    if(makeArhive(model->rootPath(), filePath, pass)){
+        qDebug()<<"makeArh"<<filePath+".7z";
+
+    }
+
     filePath = "";
     currentFileName="";
     ui->filesTextEdit->clear();
@@ -113,30 +151,23 @@ void MainWindow::closeFile(){
 
 void MainWindow::on_saveFile_triggered()
 {
-    if(User::getAccess().toInt()!=3){
-        callMessageBox("Недостаточный уровень доступа");
-    }else{
 
         filePath = changeExtension(filePath,"secretextension","txt");
+        qDebug()<<filePath;
         QFile file(filePath);
         if (file.open(QIODevice::WriteOnly)) {
-
-//            QLockFile lockfile(filePath);
-//            lockfile.lock();
-
+//            fileHash = hashString(ui->filesTextEdit->toPlainText().toUtf8());
             file.write(ui->filesTextEdit->toPlainText().toUtf8());
             file.close();
             sign();
+            pass = User::getUsername();
             filePath = changeExtension(filePath,"txt","secretextension");
             callMessageBox("Данные сохранены");
-
-//            lockfile.unlock();
 
         }else{
             filePath = changeExtension(filePath,"txt","secretextension");
         }
 
-    }
 }
 
 void MainWindow::sign(){
@@ -144,14 +175,14 @@ void MainWindow::sign(){
     if(!db.open()){
 
     }
-    qDebug()<<ui->filesListView->currentIndex().data().toString();
     qDebug()<<User::getUsername();
     QSqlQuery query(db);
     query.prepare("UPDATE files_access "
-                  "SET modified_by = :modified_by "
+                  "SET modified_by = :modified_by, hash = :hash "
                 "WHERE file_name = :file_name");
     query.bindValue(":modified_by", User::getUsername());
-    query.bindValue(":file_name", ui->filesListView->currentIndex().data().toString());
+    query.bindValue(":file_name", currentFileName);
+    query.bindValue(":hash", hashString(ui->filesTextEdit->toPlainText()));
     if(!query.exec()){
         qDebug()<<"err updete";
     }
@@ -160,10 +191,10 @@ void MainWindow::sign(){
 void MainWindow::restrictionByAccess(){
     switch (User::getAccess().toInt()) {
     case 1:
-        ui->filesTextEdit->setTextInteractionFlags(Qt::NoTextInteraction);
+//        ui->filesTextEdit->setTextInteractionFlags(Qt::NoTextInteraction);
         break;
     case 2:
-        ui->filesTextEdit->setReadOnly(true);
+//        ui->filesTextEdit->setReadOnly(true);
         break;
     }
 }
@@ -171,7 +202,7 @@ void MainWindow::restrictionByAccess(){
 bool MainWindow::checkFileAccess(QString fileName){
     db = QSqlDatabase::database(localPatch);
     QSqlQuery query(db);
-    query.prepare("select file_access, isUsed from files_access where file_name = :file_name");
+    query.prepare("select file_access, isUsed, hash, modified_by from files_access where file_name = :file_name");
     query.bindValue(":file_name", fileName);
     if(!query.exec()){
         return false;
@@ -185,17 +216,18 @@ bool MainWindow::checkFileAccess(QString fileName){
             return false;
         }
         if(query.value(1).toInt() == 0){
-            qDebug()<<"stat"<<0;
-
+            if(query.value(0)<User::getAccess().toInt()){
+                ui->filesTextEdit->setReadOnly(true);
+            }else{
+                ui->filesTextEdit->setReadOnly(false);
+            }
+            fileHash = query.value(2).toString();
+            pass = query.value(3).toString();
             return true;
         }
-        if(query.value(1).toInt() == 1){
-            qDebug()<<"stat: "<<1;
-            return false;
-        }
     }
-    qDebug()<<"in check"<<fileName;
-    return true;
+    callMessageBox("Файл уже используется.");
+    return false;
 }
 
 void MainWindow::on_createNewFile_triggered()
@@ -235,9 +267,6 @@ void MainWindow::sendUnUsing(QString str){
     if(!db.open()){
 
     }
-    qDebug()<<"clean";
-//    qDebug()<<ui->filesListView->currentIndex().data().toString();
-//    qDebug()<<User::getUsername();
     QSqlQuery query(db);
     query.prepare("UPDATE files_access "
                   "SET isUsed = :isUsed "

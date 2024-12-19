@@ -40,6 +40,9 @@ private:
     QFileSystemModel *model;
 
     QString filePath;
+    QString fileHash;
+
+    QString pass;
 
     QString currentFileName;
     QString lastFileName;
@@ -50,7 +53,9 @@ private:
     void restrictionByAccess();
     bool checkFileAccess(QString);
     void closeFile();
+    void updateHash();
     void sign();
+    QString getZipPass(QString file);
 
 
 private slots:

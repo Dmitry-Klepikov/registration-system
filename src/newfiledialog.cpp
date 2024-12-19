@@ -29,28 +29,47 @@ void NewFileDialog::on_buttonBox_accepted()
     if(!checkName()){
         return ;
     }
-    QFile file(root+"//"+ui->nameLineEdit->text()+".secretextension");
-    if(file.open(QIODevice::WriteOnly | QIODevice::Append)){
-//        QLockFile lock(root+"//"+ui->nameLineEdit->text()+".secretextension");
-//        lock.lock();
+    QString filePath = root+"//"+ui->nameLineEdit->text()+".txt";
+    QFile file(filePath);
+    QString hashFile;
+    if(file.open(QIODevice::WriteOnly)){
+        hashFile = hashString(" ");
+        file.write(" ");
         file.close();
+        qDebug()<<hashFile<<"new";
     }else{
         return ;
     }
 
+     filePath = changeExtension(filePath,"txt","secretextension");
+//     if(pass == ""){
+         QString pass = User::getUsername();
+//     }
+     qDebug()<<"pass to close: "+pass;
+     if(makeArhive(root, filePath, pass)){
+         qDebug()<<"makeArh"<<filePath+".7z";
+
+     }
 
 
     QSqlQuery query(db);
     query.prepare(  "INSERT INTO [dbo].[files_access] "
                     "(file_name   "
-                    ",file_access)"
+                    ",file_access,"
+                    "modified_by, "
+                    "hash ) "
                     " VALUES    "
                     "( :file_name,  "
-                    "  :access)");
+                    "  :access, "
+                    " :modified_by, "
+                    "   :hash)");
     query.bindValue(":file_name", ui->nameLineEdit->text()+".secretextension");
     query.bindValue(":access", ui->accessComboBox->currentText().toInt());
+    query.bindValue(":modified_by",  User::getUsername());
+
+    query.bindValue(":hash", hashFile);
     if(!query.exec()){
-        qDebug()<<"err updete";
+        qDebug()<<"err update";
     }
 
 }
@@ -65,7 +84,7 @@ bool NewFileDialog::checkName(){
     query.prepare("select file_name from files_access where file_name = :file_name");
     query.bindValue(":file_name", ui->nameLineEdit->text()+".secretextension");
     if(!query.exec()){
-        qDebug()<<"err updete";
+        qDebug()<<"err update";
         return false;
     }
     if(query.first()){
